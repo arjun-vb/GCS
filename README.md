@@ -1,4 +1,4 @@
-# Project 2 Template
+# Google Cloud Storage
 
 ## Initial Set up
 
