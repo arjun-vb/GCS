@@ -1,7 +1,7 @@
 require 'sinatra'
 
 get '/' do
-  "Hello World\n"
+  redirect to("/files/"), 302
 end
 
 post '/' do
