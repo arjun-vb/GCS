@@ -12,11 +12,15 @@ get '/files/' do
   bucket = storage.bucket 'cs291project2', skip_lookup: true
   all_files = bucket.files
   array_files = []
+  digest_format = /[0-9a-z]{2}\/[0-9a-z]{2}\/[0-9a-z]{60}/
+
   all_files.all do |file|
-    array_files.append(file.name.downcase)
+    if (!!file.name.downcase.match(digest_format))
+      array_files.append(file.name.downcase)
+    end
   end
   array_files.sort!
-  status  201
+  status  200
   body array_files.to_json
 end
 
@@ -38,15 +42,15 @@ post '/files/' do
     sha256 = Digest::SHA256.hexdigest txt
 
     newdigest = sha256[0,2] + "/" + sha256[2,2] + "/" + sha256[4,60]
-    puts sha256
-    puts newdigest
+    #puts sha256
+    #puts newdigest
 
     storage = Google::Cloud::Storage.new(project_id: 'cs291a')
     bucket = storage.bucket 'cs291project2', skip_lookup: true
     exist = bucket.file newdigest
 
     if exist == nil
-      #bucket.createfile file['tempfile'], path = newdigest, content_type = file['type']
+      bucket.create_file file['tempfile'], path = newdigest, content_type: file['type']
       response = { uploaded: sha256 }.to_json
       status  201 
       body response
