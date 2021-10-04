@@ -41,9 +41,9 @@ get '/files/:digest' do
     file = bucket.file newdigest
     
     if (file != nil)
-      status 200
       body file.download.read
-      content_type file.content_type      
+      content_type file.content_type
+      status 200   
     else 
       status 404
     end
