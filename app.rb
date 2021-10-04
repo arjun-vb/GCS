@@ -3,15 +3,18 @@ require 'google/cloud/storage'
 require 'digest'
 require 'json'
 
+
 get '/' do
   redirect to("/files/"), 302
 end
+
 
 get '/files/' do
   storage = Google::Cloud::Storage.new(project_id: 'cs291a')
   bucket = storage.bucket 'cs291project2', skip_lookup: true
   all_files = bucket.files
   array_files = []
+  
   digest_format = /[0-9a-z]{2}\/[0-9a-z]{2}\/[0-9a-z]{60}/
 
   all_files.all do |file|
@@ -20,17 +23,35 @@ get '/files/' do
     end
   end
   array_files.sort!
+  
   status  200
   body array_files.to_json
 end
 
+
 get '/files/:digest' do
-  storage = Google::Cloud::Storage.new(project_id: 'cs291a')
-  bucket = storage.bucket 'cs291project2', skip_lookup: true
-  file = bucket.file digest
-  
-  puts file.name
+  digest_raw = /[0-9a-z]{64}/
+  digest = params['digest']
+
+  if (!!digest.downcase.match(digest_raw))
+    storage = Google::Cloud::Storage.new(project_id: 'cs291a')
+    bucket = storage.bucket 'cs291project2', skip_lookup: true
+    newdigest = digest[0,2] + "/" + digest[2,2] + "/" + digest[4,60]
+    file = bucket.file newdigest
+    
+    if (file != nil)
+      body file.download.read
+      content_type file.content_type
+      status 200
+    else 
+      status 404
+    end
+
+  else
+    status 422
+  end
 end 
+
 
 post '/files/' do
   file = params[:file]
@@ -42,8 +63,6 @@ post '/files/' do
     sha256 = Digest::SHA256.hexdigest txt
 
     newdigest = sha256[0,2] + "/" + sha256[2,2] + "/" + sha256[4,60]
-    #puts sha256
-    #puts newdigest
 
     storage = Google::Cloud::Storage.new(project_id: 'cs291a')
     bucket = storage.bucket 'cs291project2', skip_lookup: true
@@ -57,14 +76,26 @@ post '/files/' do
     else
       status 409
     end
+
   else
     status 422
   end
-
 end
 
-post '/' do
-  require 'pp'
-  PP.pp request
-  "POST\n"
+
+delete '/files/:digest' do
+  digest_raw = /[0-9a-z]{64}/
+  digest = params['digest']
+  if (!!digest.downcase.match(digest_raw))
+    storage = Google::Cloud::Storage.new(project_id: 'cs291a')
+    bucket = storage.bucket 'cs291project2', skip_lookup: true
+    newdigest = digest[0,2] + "/" + digest[2,2] + "/" + digest[4,60]
+    file = bucket.file newdigest
+    if (file != nil)
+      file.delete
+    end
+    status 200
+  else
+    status 422
+  end
 end
